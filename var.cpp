@@ -650,7 +650,10 @@ void ConfigInit(configuration& config, const std::string& delimiter="\t")
 	config.date_init_ = true;
 }
 
-
+double abs_time(const std::array<int, 3>& d, double t)
+{
+	return (d[2] * 365 + d[1] * 30 + d[0]) * 24 * 60 * 60 + t;
+}
 
 bool covers(const std::array<int, 3>& date_start_st, double time_start_st,
 		const std::array<int, 3>& date_stop_st, double time_stop_st,
@@ -777,6 +780,39 @@ void dT_varInit(configuration& config)
 }
 
 
+
+std::stringstream VarWrite(var_station& st, const std::string& del="\t")
+{
+	std::stringstream ss;
+
+	ss << "FIELD" << del
+		<< "QMC" << del
+		<< "ST" << del
+		<< "DATE" << del
+		<< "TIME" << del
+		<< "var_field" << del 
+		<< "time [sec]" << del
+		<< "abs time [sec]" << "\n";
+
+	for (auto& it : st.var)
+	{
+		ss << it.FIELD << del
+			<< it.QMC << del
+			<< it.ST << del
+			<< it.DATE << del
+			<< it.TIME << del
+			<< it.var_field << del
+			<< it.time << del
+			<< abs_time(it.date, it.time) << "\n";
+	}
+
+	return ss;
+}
+
+
+
+
+
 void CorrectFormatInput()
 {
 	std::cerr << "Correct format:\n";
@@ -803,6 +839,7 @@ int main(int argc, char* argv[])
 	bool vars = false;
 	bool to_file = false;
 	bool create_file = false;
+	bool print_var = false;
 
 	std::string delimiter = "\t";
 	std::string config_file;
@@ -864,6 +901,10 @@ int main(int argc, char* argv[])
 				CorrectFormatInput();
 			}
 		}
+		else if (arg1 == "-pvar" || arg1 == "--printVar")
+		{
+			print_var = true;
+		}
 		else
 		{
 			std::cerr << "Invalid input format! Unexcepted argument: " << argv[i] << "\n";
@@ -877,8 +918,15 @@ int main(int argc, char* argv[])
 	configuration config = ConfParser(confss, delimiter);
 	ConfigInit(config, delimiter);
 
-	if (vars) dT_varInit(config);
+	std::vector<std::thread> processing;
 
+	if (vars) processing.push_back( std::thread(dT_varInit, std::ref(config)) );
+
+	for(auto& t : processing)
+	{
+		t.join();
+	}
+	
 	if (create_file)
 	{
 		if (to_file)
@@ -891,6 +939,17 @@ int main(int argc, char* argv[])
 				ss << SurWrite(it).str();
 				ss << "\n\n";
 			}
+	
+			if (print_var)
+			{
+				for (auto& it : config.var_st)
+				{
+					ss << it.file_name << "\n";
+					ss << VarWrite(it).str();
+					ss << "\n\n";
+				}
+			}
+
 
 			leo::WriteFile(out_file, ss);
 		}
@@ -906,6 +965,21 @@ int main(int argc, char* argv[])
 
 				leo::WriteFile(file_name, ss);
 			}
+
+
+			if (print_var)
+			{
+				for (auto& it : config.var_st)
+				{
+					std::stringstream ss;
+
+					std::string file_name = "processing_" + basename(it.file_name);
+					
+					ss << VarWrite(it).str();
+
+					leo::WriteFile(file_name, ss);
+				}
+			}
 		}
 	}
 	else
@@ -918,6 +992,18 @@ int main(int argc, char* argv[])
 			ss << SurWrite(it, "|").str();
 			ss << "\n\n";
 		}
+
+
+		if (print_var)
+		{
+			for (auto& it : config.var_st)
+			{
+				ss << it.file_name << "\n";
+				ss << VarWrite(it, "|").str();
+				ss << "\n\n";
+			}
+		}
+
 
 		std::cout << ss.str();
 	}
