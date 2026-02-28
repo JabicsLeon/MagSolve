@@ -1,0 +1,6 @@
+-var	--name	Date/variations1.txt	-X=364344.5	-Y=6178535.662
+-var	--name	Date/variations2.txt	-X=364472.126	-Y=6178484.703
+-var	--name	Date/variations3.txt	-X=364507.732	-Y=6178614.906
+-var	--name	Date/variations30.05.txt	-X=364344.5	-Y=6178535.662
+-meas	--name	Date/Magnetic_survey_may.txt
+-meas	--name	Date/Magnetic_survey_jun.txt
