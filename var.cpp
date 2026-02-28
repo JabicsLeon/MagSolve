@@ -650,23 +650,27 @@ void ConfigInit(configuration& config, const std::string& delimiter="\t")
 	config.date_init_ = true;
 }
 
-bool InDateTimeRange(const double& T1start, const double& T1stop, 
-			const std::array<int, 3>& start1, const std::array<int, 3>& stop1,
-			const double& T2start, const double& T2stop, 
-			const std::array<int, 3>& start2, const std::array<int, 3>& stop2)
+
+
+bool covers(const std::array<int, 3>& date_start_st, double time_start_st,
+		const std::array<int, 3>& date_stop_st, double time_stop_st,
+		const std::array<int, 3>& date_start_sur, double time_start_sur,
+		const std::array<int, 3>& date_stop_sur, double time_stop_sur)
 {
-	auto dateTime = [](const double& T, const std::array<int, 3>& date) 
+	auto to_abs = [] (const std::array<int, 3>& d, double t)
 	{
-		return (date[2] * 365 + date[1] * 30 + date[0]) * 24 * 60 * 60 + T;
+		return (d[2] * 365 + d[1] * 30 + d[0]) * 24 * 60 * 60 + t;
 	};
 
-	double time_start1 = dateTime(T1start, start1);
-	double time_stop1 = dateTime(T1stop, stop1);
-	double time_start2 = dateTime(T2start, start2);
-	double time_stop2 = dateTime(T2stop, stop2);
+	double st_start = to_abs(date_start_st, time_start_st);
+	double st_stop = to_abs(date_stop_st, time_stop_st);
+	double sur_start = to_abs(date_start_sur, time_start_sur);
+	double sur_stop = to_abs(date_stop_sur, time_stop_sur);
 
-	return time_start1 <= time_start2 && time_stop2 >= time_stop1;
+	return st_start <= sur_start && sur_stop <= st_stop;
+
 }
+
 
 
 void dT_varInit(configuration& config)
@@ -685,21 +689,17 @@ void dT_varInit(configuration& config)
 
 			for (auto& it : config.var_st)
 			{
-				if ( it.Date_start[2] <= config.sur[i].Date_start[2] && it.Date_stop[2] >= config.sur[i].Date_stop[2]) 
+				if ( covers(it.Date_start, it.Time_start, it.Date_stop, it.Time_stop,
+						config.sur[i].Date_start, config.sur[i].Time_start,
+						config.sur[i].Date_stop, config.sur[i].Time_stop) )
+						
 				{
-					if ( it.Date_start[1] == config.sur[i].Date_start[1] && it.Date_stop[1] == config.sur[i].Date_stop[1])
-					{
-						if (it.Date_start[0] <= config.sur[i].Date_start[0] && it.Date_stop[0] >= config.sur[i].Date_stop[0])
-						{
-							if (it.Time_start <= config.sur[i].Time_start && it.Time_stop >= config.sur[i].Time_stop)
-							{
-								vr_st.push_back(it);
-								++j;
-							}
-						}
-					}
+					vr_st.push_back(it);
+					++j;
 				}
+			
 			}
+
 
 			if (j >= 3)
 			{
@@ -784,6 +784,15 @@ void CorrectFormatInput()
 	std::cerr << "\t[-var/--variation] [-config/--configuration] [config_file] [-del/--delimiter] [symbol]  [-of/--outfile]\n";
 	std::cerr << "\t[-var/--variation] [-config/--configuration] [config_file] [-del/--delimiter] [-of/--outfile] [file]\n";
 }
+
+
+std::string basename(const std::string& path)
+{
+	size_t pos = path.find_last_of("/\\");
+	if (pos == std::string::npos) return path;
+	return path.substr(pos + 1);
+}
+
 
 //=================================================================================================================Parsing_Dialog===============================================================================================================
 
@@ -891,7 +900,7 @@ int main(int argc, char* argv[])
 			{
 				std::stringstream ss;
 
-				std::string file_name = "processing_" + it.file_name;
+				std::string file_name = "processing_" + basename(it.file_name);
 				
 				ss << SurWrite(it).str();
 
