@@ -54,8 +54,12 @@ struct Meas
 	double T_top;
 	double T_bot;
 	double T_grad;
+	double T_bot_anom;
+	double T_top_anom;
+
 
 	double dT_var;
+	double dT_norm;
 
 	double dT_top;
 	double dT_bot;
@@ -84,6 +88,7 @@ struct survey
 	std::array<int, 3> Date_stop;
 
 	bool T_grad_init_ = false;
+	bool T_anom_init_ = false;
 	bool dT_var_init_ = false;
 };
 
@@ -167,6 +172,21 @@ std::vector<double> plane(var_station& st1, var_station& st2, var_station& st3, 
 	
 }
 
+
+double T_var(survey& sur, var_station& st1, var_station& st2, var_station& st3, size_t k)
+{
+	double time = sur.meas[k].time;
+
+	std::array<var_station, 3> vr = { st1, st2, st3 };
+	std::vector<double> cof = plane(st1, st2, st3, time);
+
+	double T_v = (-1) * ( cof[0] * sur.meas[k].X + cof[1] * sur.meas[k].Y + cof[3] ) / cof[2];
+
+	return T_v;
+
+}
+
+
 double dT_var(survey& sur, var_station& st1, var_station& st2, var_station& st3, size_t k)
 {
 	double time = sur.meas[k].time;
@@ -198,6 +218,45 @@ double dT_var(survey& sur, var_station& st1, var_station& st2, var_station& st3,
 	return dT_v;
 	
 }
+
+
+double T_var(survey& sur, var_station& st1, var_station& st2, size_t k)
+{
+	double time = sur.meas[k].time;
+	double l, m, n;
+
+	l = st2.X - st1.X;
+	m = st2.Y - st1.Y;
+
+	std::array<std::array<size_t, 2>, 2> t;
+	std::array<var_station, 2> vr = { st1, st2 };
+	for (size_t i = 0; i < 2; ++i)
+	{
+		t[i] = Find_Time(vr[i], time);
+	}
+
+	double T1 = ( st1.var[ t[0][0] ].var_field + st1.var[ t[0][1] ].var_field ) / 2;
+	double T2 = ( st1.var[ t[1][0] ].var_field + st1.var[ t[1][1] ].var_field ) / 2;
+
+	n = T2 - T1;
+
+	leo::matrix<double> S(1,2);
+
+	S[0][0] = l;    S[0][1] = m;
+
+	leo::matrix<double> K(1,2);
+
+	K[0][0] = sur.meas[k].X - st1.X;         K[0][1] = sur.meas[k].Y - st1.Y;
+
+	leo::matrix<double> S_t = S.transposition();
+
+	double T_v = T1 + ( K(S_t) ).get_value() / ( S(S_t) ).get_value();
+
+	return T_v;
+}
+
+
+
 
 double dT_var(survey& sur, var_station& st1, var_station& st2, size_t k)
 {
@@ -252,6 +311,19 @@ double dT_var(survey& sur, var_station& st1, var_station& st2, size_t k)
 	return dT_v;
 }
 
+
+double T_var(survey& sur, var_station& st1, size_t k)
+{
+	double time = sur.meas[k].time;
+
+	std::array<size_t, 2> t = Find_Time(st1, time);
+
+	double T1 = ( st1.var[ t[0] ].var_field + st1.var[ t[1] ].var_field ) / 2;
+
+	return T1;
+}
+
+
 double dT_var(survey& sur, var_station& st1, size_t k)
 {
 	double time = sur.meas[k].time;
@@ -274,6 +346,47 @@ double dT_var(survey& sur, var_station& st1, size_t k)
 	double dT_v = T1 - st1.mean;
 
 	return dT_v;
+}
+//=================================================================================================================Normal_field===============================================================================================================
+
+std::vector<double> T_anom_var(survey& sur, var_station& st1, var_station& st2, var_station& st3, size_t k)
+{
+	std::vector<double> T_anom;
+
+	double T_vars = T_var(sur, st1, st2, st3, k);
+
+	T_anom.push_back( T_vars - sur.meas[k].T_bot );
+
+	if (sur.T_grad_init_) T_anom.push_back( T_vars - sur.meas[k].T_top );
+
+	return T_anom;
+}
+
+std::vector<double> T_anom_var(survey& sur, var_station& st1, var_station& st2, size_t k)
+{
+	std::vector<double> T_anom;
+
+	double T_vars = T_var(sur, st1, st2, k);
+
+	T_anom.push_back( T_vars - sur.meas[k].T_bot );
+
+	if (sur.T_grad_init_) T_anom.push_back( T_vars - sur.meas[k].T_top );
+
+	return T_anom;
+}
+
+
+std::vector<double> T_anom_var(survey& sur, var_station& st1, size_t k)
+{
+	std::vector<double> T_anom;
+
+	double T_vars = T_var(sur, st1, k);
+
+	T_anom.push_back( T_vars - sur.meas[k].T_bot );
+
+	if (sur.T_grad_init_) T_anom.push_back( T_vars - sur.meas[k].T_top );
+
+	return T_anom;
 }
 
 //=================================================================================================================Parsing_File===============================================================================================================
@@ -443,6 +556,13 @@ std::stringstream SurWrite(survey sur, const std::string& del="\t")
 		else ss << del << "dT";
 	}
 
+	if (sur.T_anom_init_)
+	{
+		if (sur.T_grad_init_) ss << "T_bottom_anomal" << del
+					<< "T_top_anomal";
+		else ss << "T_anomal";
+	}
+
 	ss << "\n";
 
 	for (auto& it : sur.meas)
@@ -468,6 +588,13 @@ std::stringstream SurWrite(survey sur, const std::string& del="\t")
 						<< it.dT_bot << del
 						<< it.dT_top;
 			else ss << del << it.dT_bot;
+		}
+
+		if (sur.T_anom_init_)
+		{
+			if (sur.T_grad_init_) ss << it.T_bot_anom << del
+						<< it.T_top_anom;
+			else ss << it.T_bot_anom;
 		}
 
 		ss << "\n";
@@ -591,6 +718,8 @@ configuration ConfParser(std::stringstream& rd, const std::string& delimiter="\t
 
 	return config;
 }
+
+//=================================================================================================================Init===============================================================================================================
 
 
 void ConfigInit(configuration& config, const std::string& delimiter="\t")
@@ -781,6 +910,91 @@ void dT_varInit(configuration& config)
 
 
 
+void T_anom_varInit(configuration& config)
+{
+	size_t len = config.sur.size();
+
+	std::vector<std::thread> sur_tr;
+
+	for (size_t i = 0; i < len; ++i)
+	{
+		sur_tr.push_back( std::thread(  [&config, i]
+		{
+			int j = 0;
+
+			std::vector<var_station> vr_st;
+
+			for (auto& it : config.var_st)
+			{
+				if ( covers(it.Date_start, it.Time_start, it.Date_stop, it.Time_stop,
+						config.sur[i].Date_start, config.sur[i].Time_start,
+						config.sur[i].Date_stop, config.sur[i].Time_stop) )
+				{
+					vr_st.push_back(it);
+					++j;
+				}
+			}
+
+			if (j >= 3)
+			{
+				for (size_t k = 0; k < config.sur[i].meas.size(); ++k)
+				{
+					std::vector<double> T_a = T_anom_var(config.sur[i], vr_st[0], vr_st[1], vr_st[2], k);
+
+					config.sur[i].meas[k].T_bot_anom = T_a[0];
+					if (config.sur[i].T_grad_init_) config.sur[i].meas[k].T_top_anom = T_a[1];
+				}
+
+				config.sur[i].T_anom_init_ = true;
+			} 
+			else if (j == 2) 
+			{
+				for (size_t k = 0; k < config.sur[i].meas.size(); ++k)
+				{
+					std::vector<double> T_a = T_anom_var(config.sur[i], vr_st[0], vr_st[1], k);
+
+					config.sur[i].meas[k].T_bot_anom = T_a[0];
+					if (config.sur[i].T_grad_init_) config.sur[i].meas[k].T_top_anom = T_a[1];
+				}
+
+				config.sur[i].T_anom_init_ = true;
+			}
+			else if (j == 1)
+			{
+				for (size_t k = 0; k < config.sur[i].meas.size(); ++k)
+				{
+					std::vector<double> T_a = T_anom_var(config.sur[i], vr_st[0], k);
+
+					config.sur[i].meas[k].T_bot_anom = T_a[0];
+					if (config.sur[i].T_grad_init_) config.sur[i].meas[k].T_top_anom = T_a[1];
+				}
+
+				config.sur[i].T_anom_init_ = true;
+			}
+			else
+			{
+				std::cerr << "dT_varInit: Error of searching station in range time! file:"
+						 << config.sur[i].file_name << "\n";
+				std::cerr << "Excepted Date range: " << config.sur[i].Date_start[0] << "."
+						<< config.sur[i].Date_start[1] << "."
+						<< config.sur[i].Date_start[2] << " - "
+						<< config.sur[i].Date_stop[0] << "."
+						<< config.sur[i].Date_stop[1] << "."
+						<< config.sur[i].Date_stop[2] << "\n";
+				throw std::invalid_argument("dT_varInit: There is't variation staition in observation time range!");
+			}
+		}
+		));
+	}
+
+	for (auto& t : sur_tr)
+	{
+		t.join();
+	}
+}
+
+
+
 std::stringstream VarWrite(var_station& st, const std::string& del="\t")
 {
 	std::stringstream ss;
@@ -815,10 +1029,16 @@ std::stringstream VarWrite(var_station& st, const std::string& del="\t")
 
 void CorrectFormatInput()
 {
-	std::cerr << "Correct format:\n";
-	std::cerr << "\t[-var/--variation] [-config/--configuration] [config_file] [-del/--delimiter] [symbol]\n";
-	std::cerr << "\t[-var/--variation] [-config/--configuration] [config_file] [-del/--delimiter] [symbol]  [-of/--outfile]\n";
-	std::cerr << "\t[-var/--variation] [-config/--configuration] [config_file] [-del/--delimiter] [-of/--outfile] [file]\n";
+	std::cerr << "Correct format:\n"
+		<< "[comand...] [-config/--configuration] [config_file] [options...]\n"
+		<< "Comands:\n"
+		<< "\t[-var/--variation] - calculate variation by station\n"
+		<< "\t[-pvar/--printVar] - calculate and print variation station whit time in second\n"
+		<< "\t[-avar/--anomVar] - calculate anomals field by field of variation station\n"
+		<< "Options:\n"
+		<< "\t[-del/--delimiter] [symbol] - set delimiter in reads fiels\n"
+		<< "\t[-of/--outfile] - creat output fiels whit prefix 'processing_'\n"
+		<< "\t[-of/--outfile] [file] - write output to fiel\n";
 }
 
 
@@ -840,6 +1060,7 @@ int main(int argc, char* argv[])
 	bool to_file = false;
 	bool create_file = false;
 	bool print_var = false;
+	bool T_an_var = false;
 
 	std::string delimiter = "\t";
 	std::string config_file;
@@ -905,6 +1126,10 @@ int main(int argc, char* argv[])
 		{
 			print_var = true;
 		}
+		else if (arg1 == "-avar" || arg1 == "--anomVar")
+		{
+			T_an_var = true;
+		}
 		else
 		{
 			std::cerr << "Invalid input format! Unexcepted argument: " << argv[i] << "\n";
@@ -921,6 +1146,7 @@ int main(int argc, char* argv[])
 	std::vector<std::thread> processing;
 
 	if (vars) processing.push_back( std::thread(dT_varInit, std::ref(config)) );
+	if (T_an_var) processing.push_back( std::thread(T_anom_varInit, std::ref(config)) );
 
 	for(auto& t : processing)
 	{

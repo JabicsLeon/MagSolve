@@ -381,7 +381,7 @@ namespace leo{
 				return M;
 			}
 
-			matrix<T> Method_Gauss(const matrix<T>& A){
+			static matrix<T> Method_Gauss(const matrix<T>& A){
 				if(!A.is_square()) throw std::invalid_argument("Method_Gauss: matrix is not square!");
 
 				size_t n = A.size_row();
@@ -402,7 +402,7 @@ namespace leo{
 					if(std::abs(B[k][k]) < 1e-10) throw std::invalid_argument("Method_Gauss: matrix is singular");
 
 					T pivot = B[k][k];
-					for(size_t j=k; j < B.size_col(); ++j){
+					for(size_t j=0; j < B.size_col(); ++j){ // j=k
 						B[k][j] /= pivot;
 						I[k][j] /= pivot;
 					}
@@ -412,6 +412,8 @@ namespace leo{
 						if(std::abs(factor) > 1e-10){
 							for(size_t j=k; j < n; ++j){
 								B[i][j] -= factor * B[k][j];
+							}
+							for(size_t j=0; j < n; ++j){
 								I[i][j] -= factor * I[k][j];
 							}
 						}
@@ -421,8 +423,8 @@ namespace leo{
 				for(int i=n-1; i >= 0; --i){
 					for(int j=i-1; j >= 0; --j){
 						T factor = B[j][i] / B[i][i];
-						B[j][i] -= factor * B[i][i];
 						for(size_t k = 0; k < n; ++k){
+							B[j][k] -= factor * B[i][k]; // there
 							I[j][k] -= factor * I[i][k];
 						}
 					}
@@ -433,8 +435,8 @@ namespace leo{
 			}
 
 
-			T Method_Laplas(const matrix<T>& A){
-				if (!is_square()) throw std::invalid_argument("Method_Laplas: matrix is not square!");	
+			static T Method_Laplas(const matrix<T>& A){
+				if (!A.is_square()) throw std::invalid_argument("Method_Laplas: matrix is not square!");	
 
 				size_t n = A.size_row();
 
@@ -501,8 +503,11 @@ namespace leo{
 			}
 
 			
-			static matrix<T> Cov(matrix<T> A){
-			       matrix<T> cov(A.size_col(), A.size_col());
+			matrix<T> cov(){
+				
+				matrix<T> A = *this;
+
+				matrix<T> cov(A.size_col(), A.size_col());
 
 				for(size_t j=0; j < A.size_col(); ++j){
 					T mean = 0;
@@ -529,9 +534,12 @@ namespace leo{
 			}
 
 
-			static matrix<T> Cor(matrix<T> A){
+			matrix<T> cor(){
+
+				matrix<T> A = *this;
+
 				size_t n = A.size_col();
-				matrix<T> cov = leo::matrix<T>::Cov(A);
+				matrix<T> cov = A.cov();
 				matrix<T> cor = cov;
 
 				for(size_t i=0; i<n; ++i){
@@ -2053,5 +2061,7 @@ auto Method_Newton(Tag tag, T error/*=1.0*/, size_t max_iter/*=100*/, Iterator1 
 }
 
 //===============================================================================Test_modul=========================================================================================
+
+
 
 
