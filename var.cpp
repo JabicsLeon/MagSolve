@@ -145,6 +145,17 @@ std::array<size_t, 2> Find_Time(var_station& st, double time)
 }
 
 
+double linear_interpolation(double x3, double x1, double y1, double x2, double y2)
+{
+	double l = x2 - x1;
+	double m = y2 -y1;
+
+	double y3 = m * (x3 - x1) / l + y1;
+
+	return y3;
+}
+
+
 std::vector<double> plane(var_station& st1, var_station& st2, var_station& st3, double time)
 {
 	std::array<std::array<size_t, 2>, 3> t;
@@ -154,10 +165,14 @@ std::vector<double> plane(var_station& st1, var_station& st2, var_station& st3, 
 	{
 		t[i] = Find_Time(vr[i], time);
 	}
-
+/*
 	double T1 = (st1.var[t[0][0]].var_field + st1.var[t[0][1]].var_field) / 2;
 	double T2 = (st2.var[t[1][0]].var_field + st2.var[t[1][1]].var_field) / 2;
 	double T3 = (st3.var[t[2][0]].var_field + st3.var[t[2][1]].var_field) / 2;
+*/
+	double T1 = linear_interpolation(time, st1.var[t[0][0]].time, st1.var[t[0][0]].var_field, st1.var[t[0][1]].time, st1.var[t[0][1]].var_field);
+	double T2 = linear_interpolation(time, st1.var[t[1][0]].time, st1.var[t[1][0]].var_field, st1.var[t[1][1]].time, st1.var[t[1][1]].var_field);
+	double T3 = linear_interpolation(time, st1.var[t[2][0]].time, st1.var[t[2][0]].var_field, st1.var[t[2][1]].time, st1.var[t[2][1]].var_field);
 
 	std::vector<double> cof = 
 	{ 
@@ -235,8 +250,11 @@ double T_var(survey& sur, var_station& st1, var_station& st2, size_t k)
 		t[i] = Find_Time(vr[i], time);
 	}
 
-	double T1 = ( st1.var[ t[0][0] ].var_field + st1.var[ t[0][1] ].var_field ) / 2;
-	double T2 = ( st1.var[ t[1][0] ].var_field + st1.var[ t[1][1] ].var_field ) / 2;
+	//double T1 = ( st1.var[ t[0][0] ].var_field + st1.var[ t[0][1] ].var_field ) / 2;
+	//double T2 = ( st1.var[ t[1][0] ].var_field + st1.var[ t[1][1] ].var_field ) / 2;
+
+	double T1 = linear_interpolation(time, st1.var[t[0][0]].time, st1.var[t[0][0]].var_field, st1.var[t[0][1]].time, st1.var[t[0][1]].var_field);
+	double T2 = linear_interpolation(time, st1.var[t[1][0]].time, st1.var[t[1][0]].var_field, st1.var[t[1][1]].time, st1.var[t[1][1]].var_field);
 
 	n = T2 - T1;
 
@@ -273,8 +291,11 @@ double dT_var(survey& sur, var_station& st1, var_station& st2, size_t k)
 		t[i] = Find_Time(vr[i], time);
 	}
 
-	double T1 = ( st1.var[ t[0][0] ].var_field + st1.var[ t[0][1] ].var_field ) / 2;
-	double T2 = ( st1.var[ t[1][0] ].var_field + st1.var[ t[1][1] ].var_field ) / 2;
+	//double T1 = ( st1.var[ t[0][0] ].var_field + st1.var[ t[0][1] ].var_field ) / 2;
+	//double T2 = ( st1.var[ t[1][0] ].var_field + st1.var[ t[1][1] ].var_field ) / 2;
+
+	double T1 = linear_interpolation(time, st1.var[t[0][0]].time, st1.var[t[0][0]].var_field, st1.var[t[0][1]].time, st1.var[t[0][1]].var_field);
+	double T2 = linear_interpolation(time, st1.var[t[1][0]].time, st1.var[t[1][0]].var_field, st1.var[t[1][1]].time, st1.var[t[1][1]].var_field);
 
 	n = T2 - T1;
 
@@ -318,7 +339,9 @@ double T_var(survey& sur, var_station& st1, size_t k)
 
 	std::array<size_t, 2> t = Find_Time(st1, time);
 
-	double T1 = ( st1.var[ t[0] ].var_field + st1.var[ t[1] ].var_field ) / 2;
+	//double T1 = ( st1.var[ t[0] ].var_field + st1.var[ t[1] ].var_field ) / 2;
+
+	double T1 = linear_interpolation(time, st1.var[t[0]].time, st1.var[t[0]].var_field, st1.var[t[1]].time, st1.var[t[1]].var_field);
 
 	return T1;
 }
@@ -341,7 +364,9 @@ double dT_var(survey& sur, var_station& st1, size_t k)
 
 	std::array<size_t, 2> t = Find_Time(st1, time);
 
-	double T1 = ( st1.var[ t[0] ].var_field + st1.var[ t[1] ].var_field ) / 2;
+	//double T1 = ( st1.var[ t[0] ].var_field + st1.var[ t[1] ].var_field ) / 2;
+
+	double T1 = linear_interpolation(time, st1.var[t[0]].time, st1.var[t[0]].var_field, st1.var[t[1]].time, st1.var[t[1]].var_field);
 
 	double dT_v = T1 - st1.mean;
 
@@ -558,7 +583,8 @@ std::stringstream SurWrite(survey sur, const std::string& del="\t")
 
 	if (sur.T_anom_init_)
 	{
-		if (sur.T_grad_init_) ss << "T_bottom_anomal" << del
+		if (sur.T_grad_init_) ss << del
+					<< "T_bottom_anomal" << del
 					<< "T_top_anomal";
 		else ss << "T_anomal";
 	}
@@ -592,7 +618,8 @@ std::stringstream SurWrite(survey sur, const std::string& del="\t")
 
 		if (sur.T_anom_init_)
 		{
-			if (sur.T_grad_init_) ss << it.T_bot_anom << del
+			if (sur.T_grad_init_) ss << del
+						<< it.T_bot_anom << del
 						<< it.T_top_anom;
 			else ss << it.T_bot_anom;
 		}
@@ -1049,6 +1076,34 @@ std::string basename(const std::string& path)
 	return path.substr(pos + 1);
 }
 
+const std::vector<std::string> names =
+{
+	"-var",
+	"--variation",
+	"-config",
+	"--configuration",
+	"-of",
+	"--outfile",
+	"-del",
+	"--delimiter",
+	"-pvar",
+	"--printVar",
+	"-avar",
+	"--anomVar"
+};
+
+bool not_option(std::string com)
+{
+	bool result = true;
+
+	for (const auto& it : names)
+	{
+		result = result && (com != it);
+	}
+
+	return result;
+}
+
 
 //=================================================================================================================Parsing_Dialog===============================================================================================================
 
@@ -1077,7 +1132,7 @@ int main(int argc, char* argv[])
 	for (size_t i = 1; i < argc; ++i)
 	{
 		std::string arg1 = argv[i];
-		std::string arg2;
+		std::string arg2 = "";
 		if (argc - i >= 2) arg2 = argv[i + 1];
 		if (arg1 == "-var" || arg1 == "--variation")
 		{
@@ -1098,7 +1153,7 @@ int main(int argc, char* argv[])
 		}
 		else if (arg1 == "-of" || arg1 == "--outfile")
 		{
-			if (argc - i >= 2)
+			if (argc - i >= 2 && not_option(arg2))
 			{
 				out_file = argv[i + 1];
 				to_file = true;
