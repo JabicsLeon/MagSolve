@@ -4,6 +4,7 @@
 #include <exception>
 #include <future>
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <vector>
 #include <thread>
@@ -513,10 +514,10 @@ survey SurParser(std::stringstream& rd, const std::string& delimiter="\t")
 		sur.meas[i].Y = leo::string_to<double>(date[4]);
 		sur.meas[i].TIME = date[5];
 		sur.meas[i].DATE = date[6];
-		sur.meas[i].T_bot = leo::string_to<double>(date[7]);
+		sur.meas[i].T_bot = leo::string_to<double>(date[7]) / 1000;
 		if (date.size() > 8)
 		{
-			sur.meas[i].T_top = leo::string_to<double>(date[8]);
+			sur.meas[i].T_top = leo::string_to<double>(date[8]) / 1000;
 			sur.meas[i].T_grad = sur.meas[i].T_top - sur.meas[i].T_bot;
 			if (!sur.T_grad_init_) sur.T_grad_init_ = true;
 		}
@@ -564,6 +565,8 @@ std::stringstream SurWrite(survey sur, const std::string& del="\t")
 		 << "Y_end" << del
 		 << "TIME" << del
 		 << "DATE";
+
+	ss << std::fixed << std::setprecision(4);
 
 	if (sur.T_grad_init_) ss << del 
 				<< "T_bottom" << del
@@ -1034,6 +1037,8 @@ std::stringstream VarWrite(var_station& st, const std::string& del="\t")
 		<< "var_field" << del 
 		<< "time [sec]" << del
 		<< "abs time [sec]" << "\n";
+
+	ss << std::fixed << std::setprecision(4);
 
 	for (auto& it : st.var)
 	{
