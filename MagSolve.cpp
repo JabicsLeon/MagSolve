@@ -166,11 +166,7 @@ std::vector<double> plane(var_station& st1, var_station& st2, var_station& st3, 
 	{
 		t[i] = Find_Time(vr[i], time);
 	}
-/*
-	double T1 = (st1.var[t[0][0]].var_field + st1.var[t[0][1]].var_field) / 2;
-	double T2 = (st2.var[t[1][0]].var_field + st2.var[t[1][1]].var_field) / 2;
-	double T3 = (st3.var[t[2][0]].var_field + st3.var[t[2][1]].var_field) / 2;
-*/
+
 	double T1 = linear_interpolation(time, st1.var[t[0][0]].time, st1.var[t[0][0]].var_field, st1.var[t[0][1]].time, st1.var[t[0][1]].var_field);
 	double T2 = linear_interpolation(time, st1.var[t[1][0]].time, st1.var[t[1][0]].var_field, st1.var[t[1][1]].time, st1.var[t[1][1]].var_field);
 	double T3 = linear_interpolation(time, st1.var[t[2][0]].time, st1.var[t[2][0]].var_field, st1.var[t[2][1]].time, st1.var[t[2][1]].var_field);
@@ -251,9 +247,6 @@ double T_var(survey& sur, var_station& st1, var_station& st2, size_t k)
 		t[i] = Find_Time(vr[i], time);
 	}
 
-	//double T1 = ( st1.var[ t[0][0] ].var_field + st1.var[ t[0][1] ].var_field ) / 2;
-	//double T2 = ( st1.var[ t[1][0] ].var_field + st1.var[ t[1][1] ].var_field ) / 2;
-
 	double T1 = linear_interpolation(time, st1.var[t[0][0]].time, st1.var[t[0][0]].var_field, st1.var[t[0][1]].time, st1.var[t[0][1]].var_field);
 	double T2 = linear_interpolation(time, st1.var[t[1][0]].time, st1.var[t[1][0]].var_field, st1.var[t[1][1]].time, st1.var[t[1][1]].var_field);
 
@@ -292,8 +285,6 @@ double dT_var(survey& sur, var_station& st1, var_station& st2, size_t k)
 		t[i] = Find_Time(vr[i], time);
 	}
 
-	//double T1 = ( st1.var[ t[0][0] ].var_field + st1.var[ t[0][1] ].var_field ) / 2;
-	//double T2 = ( st1.var[ t[1][0] ].var_field + st1.var[ t[1][1] ].var_field ) / 2;
 
 	double T1 = linear_interpolation(time, st1.var[t[0][0]].time, st1.var[t[0][0]].var_field, st1.var[t[0][1]].time, st1.var[t[0][1]].var_field);
 	double T2 = linear_interpolation(time, st1.var[t[1][0]].time, st1.var[t[1][0]].var_field, st1.var[t[1][1]].time, st1.var[t[1][1]].var_field);
@@ -340,8 +331,6 @@ double T_var(survey& sur, var_station& st1, size_t k)
 
 	std::array<size_t, 2> t = Find_Time(st1, time);
 
-	//double T1 = ( st1.var[ t[0] ].var_field + st1.var[ t[1] ].var_field ) / 2;
-
 	double T1 = linear_interpolation(time, st1.var[t[0]].time, st1.var[t[0]].var_field, st1.var[t[1]].time, st1.var[t[1]].var_field);
 
 	return T1;
@@ -364,8 +353,6 @@ double dT_var(survey& sur, var_station& st1, size_t k)
 	}
 
 	std::array<size_t, 2> t = Find_Time(st1, time);
-
-	//double T1 = ( st1.var[ t[0] ].var_field + st1.var[ t[1] ].var_field ) / 2;
 
 	double T1 = linear_interpolation(time, st1.var[t[0]].time, st1.var[t[0]].var_field, st1.var[t[1]].time, st1.var[t[1]].var_field);
 
