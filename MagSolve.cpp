@@ -368,9 +368,9 @@ std::vector<double> T_anom_var(survey& sur, var_station& st1, var_station& st2, 
 
 	double T_vars = T_var(sur, st1, st2, st3, k);
 
-	T_anom.push_back( T_vars - sur.meas[k].T_bot );
+	T_anom.push_back( sur.meas[k].T_bot - T_vars );
 
-	if (sur.T_grad_init_) T_anom.push_back( T_vars - sur.meas[k].T_top );
+	if (sur.T_grad_init_) T_anom.push_back( sur.meas[k].T_top - T_vars );
 
 	return T_anom;
 }
@@ -381,9 +381,9 @@ std::vector<double> T_anom_var(survey& sur, var_station& st1, var_station& st2, 
 
 	double T_vars = T_var(sur, st1, st2, k);
 
-	T_anom.push_back( T_vars - sur.meas[k].T_bot );
+	T_anom.push_back( sur.meas[k].T_bot - T_vars );
 
-	if (sur.T_grad_init_) T_anom.push_back( T_vars - sur.meas[k].T_top );
+	if (sur.T_grad_init_) T_anom.push_back( sur.meas[k].T_top - T_vars );
 
 	return T_anom;
 }
@@ -395,9 +395,9 @@ std::vector<double> T_anom_var(survey& sur, var_station& st1, size_t k)
 
 	double T_vars = T_var(sur, st1, k);
 
-	T_anom.push_back( T_vars - sur.meas[k].T_bot );
+	T_anom.push_back( sur.meas[k].T_bot - T_vars );
 
-	if (sur.T_grad_init_) T_anom.push_back( T_vars - sur.meas[k].T_top );
+	if (sur.T_grad_init_) T_anom.push_back( sur.meas[k].T_top - T_vars );
 
 	return T_anom;
 }
