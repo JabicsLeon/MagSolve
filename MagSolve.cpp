@@ -168,8 +168,8 @@ std::vector<double> plane(var_station& st1, var_station& st2, var_station& st3, 
 	}
 
 	double T1 = linear_interpolation(time, st1.var[t[0][0]].time, st1.var[t[0][0]].var_field, st1.var[t[0][1]].time, st1.var[t[0][1]].var_field);
-	double T2 = linear_interpolation(time, st1.var[t[1][0]].time, st1.var[t[1][0]].var_field, st1.var[t[1][1]].time, st1.var[t[1][1]].var_field);
-	double T3 = linear_interpolation(time, st1.var[t[2][0]].time, st1.var[t[2][0]].var_field, st1.var[t[2][1]].time, st1.var[t[2][1]].var_field);
+	double T2 = linear_interpolation(time, st2.var[t[1][0]].time, st2.var[t[1][0]].var_field, st2.var[t[1][1]].time, st2.var[t[1][1]].var_field);
+	double T3 = linear_interpolation(time, st3.var[t[2][0]].time, st3.var[t[2][0]].var_field, st3.var[t[2][1]].time, st3.var[t[2][1]].var_field);
 
 	std::vector<double> cof = 
 	{ 
@@ -1049,15 +1049,25 @@ std::stringstream VarWrite(var_station& st, const std::string& del="\t")
 void CorrectFormatInput()
 {
 	std::cerr << "Correct format:\n"
-		<< "[comand...] [-config/--configuration] [config_file] [options...]\n"
+		<< "[comands...] [-config/--configuration] [config_file] [options...]\n"
 		<< "Comands:\n"
 		<< "\t[-var/--variation] - calculate variation by station\n"
 		<< "\t[-pvar/--printVar] - calculate and print variation station whit time in second\n"
 		<< "\t[-avar/--anomVar] - calculate anomals field by field of variation station\n"
 		<< "Options:\n"
-		<< "\t[-del/--delimiter] [symbol] - set delimiter in reads fiels\n"
-		<< "\t[-of/--outfile] - creat output fiels whit prefix 'processing_'\n"
-		<< "\t[-of/--outfile] [file] - write output to fiel\n";
+		<< "\t[-del/--delimiter] [symbol] - set delimiter in reads files\n"
+		<< "\t[-of/--outfile] - creat output files whit prefix 'processing_'\n"
+		<< "\t[-of/--outfile] [file] - write output to file\n";
+}
+
+void CorrectFormatConfigFile()
+{
+	std::cerr << "Correct format of line in [config_file]:\n"
+		<< "Forman to variation station:\n"
+		<< "\t[-var/--variation] [-n/--name] [file_name] [-x=.../-X=...]   [-y=.../-Y=...]\n"
+		<< "\tSystem UTM\n"
+		<< "Format to observation:\n"
+		<< "\t [-meas/--measurment] [-n/--name] [file_name]\n";
 }
 
 
@@ -1115,8 +1125,10 @@ int main(int argc, char* argv[])
 
 	if (argc < 4)
 	{
-		std::cerr << "Invalid input format! Excepted number of argument: more then 3. You input: " << argc - 1 << "\n";
+		std::cerr << "Invalid input format! Excepted number of argument: more then 3. You have inputed: " << argc - 1 << "\n";
 		CorrectFormatInput();
+		std::cerr << "\n";
+		CorrectFormatConfigFile();
 		return 1;
 	}
 
