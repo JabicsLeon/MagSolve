@@ -15,6 +15,7 @@ struct Var
 	long FIELD;
 	double var_field;
 	double time;
+	//long double time_abs;
 	std::array<int, 3> date;
 
 	int QMC;
@@ -34,6 +35,9 @@ struct var_station
 
 	double Time_start;
 	double Time_stop;
+
+	/*long double Time_start_abs;
+	long double Time_stop_abs;*/
 
 	double dt = 0;
 	double mean = 0;
@@ -66,6 +70,7 @@ struct Meas
 	double dT_bot;
 
 	double time;
+	//long double time_abs;
 
 	int Line;
 	int pr;
@@ -84,6 +89,12 @@ struct survey
 
 	double Time_start;
 	double Time_stop;
+	
+	double mean_bot = 0;
+	double mean_top = 0;
+
+	/*long double Time_start_abs;
+	long double Time_stop_abs;*/
 
 	std::array<int, 3> Date_start;
 	std::array<int, 3> Date_stop;
@@ -402,6 +413,64 @@ std::vector<double> T_anom_var(survey& sur, var_station& st1, size_t k)
 	return T_anom;
 }
 
+//=================================================================================================================Leveling_data===============================================================================================================
+void Leveling(configuration config)
+{
+	double mean_bot = 0;
+	double mean_top = 0;
+
+	for(auto& it : config.sur)
+	{
+		mean_bot += it.mean_bot;
+		if (it.T_grad_init_) mean_top += it.mean_top;
+	}
+
+	double N = config.sur.size();
+	mean_bot /= N;
+	mean_top /= N;
+
+	std::vector<std::thread> proc;
+
+	for(auto& it : config.sur)
+	{
+		proc.push_back( std::thread( [&it, mean_bot, mean_top]
+		{
+			double dmean_bot = mean_bot - it.mean_bot;
+			double dmean_top = 0;
+
+			if (it.T_grad_init_)
+			{
+				 dmean_top = mean_top - it.mean_top;
+			}
+
+			if (it.T_anom_init_)
+			{
+				if (it.T_grad_init_)
+				{
+					for(auto& el : it.meas)
+					{
+						el.T_bot_anom += dmean_bot;
+						el.T_top_anom += dmean_top;
+					}
+				}
+				else
+				{
+					for(auto& el : it.meas)
+					{
+						el.T_bot_anom += dmean_bot;
+					}
+				}
+			}
+		}
+		));
+	}
+
+	for(auto& t : proc)
+	{
+		t.join();
+	}
+}
+
 //=================================================================================================================Parsing_File===============================================================================================================
 
 
@@ -502,10 +571,12 @@ survey SurParser(std::stringstream& rd, const std::string& delimiter="\t")
 		sur.meas[i].TIME = date[5];
 		sur.meas[i].DATE = date[6];
 		sur.meas[i].T_bot = leo::string_to<double>(date[7]) / 1000;
+		sur.mean_bot += sur.meas[i].T_bot;
 		if (date.size() > 8)
 		{
 			sur.meas[i].T_top = leo::string_to<double>(date[8]) / 1000;
 			sur.meas[i].T_grad = sur.meas[i].T_top - sur.meas[i].T_bot;
+			sur.mean_top += sur.meas[i].T_top;
 			if (!sur.T_grad_init_) sur.T_grad_init_ = true;
 		}
 
@@ -533,6 +604,9 @@ survey SurParser(std::stringstream& rd, const std::string& delimiter="\t")
 		++i;
 	}
 
+	sur.mean_bot /= sur.meas.size();
+	if(sur.T_grad_init_) sur.mean_top /= sur.meas.size();
+
 	sur.Time_start = sur.meas[0].time;
 	sur.Time_stop = sur.meas[i - 1].time;
 
@@ -542,44 +616,49 @@ survey SurParser(std::stringstream& rd, const std::string& delimiter="\t")
 	return sur;
 }
 
-std::stringstream SurWrite(survey sur, const std::string& del="\t")
+std::stringstream SurWrite(survey sur, const std::string& del="\t", bool head=true)
 {
 	std::stringstream ss;
-	ss << "Line" << del
-		 << "pr" << del
-		 << "pk" << del
-		 << "X_end" << del
-		 << "Y_end" << del
-		 << "TIME" << del
-		 << "DATE";
 
-	ss << std::fixed << std::setprecision(4);
-
-	if (sur.T_grad_init_) ss << del 
-				<< "T_bottom" << del
-				<< "T_top" << del
-				<< "T_grad";
-	else ss << del << "T_measurment";
-
-	if (sur.dT_var_init_) 
+	if (head)
 	{
-		ss << del << "dT_variation";
+		ss << "Line" << del
+			 << "pr" << del
+			 << "pk" << del
+			 << "X_end" << del
+			 << "Y_end" << del
+			 << "TIME" << del
+			 << "DATE";
+
+		ss << std::fixed << std::setprecision(4);
 
 		if (sur.T_grad_init_) ss << del 
-					<< "dT_bottom" << del
-					<< "dT_top";
-		else ss << del << "dT";
+					<< "T_bottom" << del
+					<< "T_top" << del
+					<< "T_grad";
+		else ss << del << "T_measurment";
+
+		if (sur.dT_var_init_) 
+		{
+			ss << del << "dT_variation";
+
+			if (sur.T_grad_init_) ss << del 
+						<< "dT_bottom" << del
+						<< "dT_top";
+			else ss << del << "dT";
+		}
+
+		if (sur.T_anom_init_)
+		{
+			if (sur.T_grad_init_) ss << del
+						<< "T_bottom_anomal" << del
+						<< "T_top_anomal";
+			else ss << "T_anomal";
+		}
+
+		ss << "\n";
 	}
 
-	if (sur.T_anom_init_)
-	{
-		if (sur.T_grad_init_) ss << del
-					<< "T_bottom_anomal" << del
-					<< "T_top_anomal";
-		else ss << "T_anomal";
-	}
-
-	ss << "\n";
 
 	for (auto& it : sur.meas)
 	{
@@ -1054,10 +1133,12 @@ void CorrectFormatInput()
 		<< "\t[-var/--variation] - calculate variation by station\n"
 		<< "\t[-pvar/--printVar] - calculate and print variation station whit time in second\n"
 		<< "\t[-avar/--anomVar] - calculate anomals field by field of variation station\n"
+		<< "\t[-lev/--leveling] - leveling all date\n"
 		<< "Options:\n"
 		<< "\t[-del/--delimiter] [symbol] - set delimiter in reads files\n"
 		<< "\t[-of/--outfile] - creat output files whit prefix 'processing_'\n"
-		<< "\t[-of/--outfile] [file] - write output to file\n";
+		<< "\t[-of/--outfile] [file] - write output to file\n"
+		<< "\t[-of/--outfile] [file] [-un/--unitMeas] - join all observation";
 }
 
 void CorrectFormatConfigFile()
@@ -1091,7 +1172,11 @@ const std::vector<std::string> names =
 	"-pvar",
 	"--printVar",
 	"-avar",
-	"--anomVar"
+	"--anomVar",
+	"-un",
+	"--unitMeas",
+	"-lev",
+	"--leveling"
 };
 
 bool not_option(std::string com)
@@ -1118,6 +1203,8 @@ int main(int argc, char* argv[])
 	bool create_file = false;
 	bool print_var = false;
 	bool T_an_var = false;
+	bool Unit_meas = false;
+	bool Level = false;
 
 	std::string delimiter = "\t";
 	std::string config_file;
@@ -1189,6 +1276,14 @@ int main(int argc, char* argv[])
 		{
 			T_an_var = true;
 		}
+		else if (arg1 == "-un" || arg1 == "--unitMeas")
+		{
+			Unit_meas = true;
+		}
+		else if (arg1 == "-lev" || arg1 == "--leveling")
+		{
+			Level = true;
+		}
 		else
 		{
 			std::cerr << "Invalid input format! Unexcepted argument: " << argv[i] << "\n";
@@ -1211,17 +1306,25 @@ int main(int argc, char* argv[])
 	{
 		t.join();
 	}
+
+
+	if (Level) Leveling(config);
+
 	
 	if (create_file)
 	{
 		if (to_file)
 		{
 			std::stringstream ss;
-			
+			bool _init_head_ = false;			
+
 			for (auto& it : config.sur)
 			{
-				ss << it.file_name << "\n";
-				ss << SurWrite(it).str();
+				bool phead = Unit_meas && !(_init_head_);
+				_init_head_ = true;
+
+				if (!Unit_meas) ss << it.file_name << "\n";
+				ss << SurWrite(it, "\t", phead).str();
 				ss << "\n\n";
 			}
 	
@@ -1270,11 +1373,15 @@ int main(int argc, char* argv[])
 	else
 	{
 		std::stringstream ss;
+		bool _init_head_ = false;
 
 		for (auto& it : config.sur)
 		{
-			ss << it.file_name << "\n";
-			ss << SurWrite(it, "|").str();
+			bool phead = Unit_meas && !(_init_head_);
+			_init_head_ = true;
+
+			if (!Unit_meas) ss << it.file_name << "\n";
+			ss << SurWrite(it, "|", phead).str();
 			ss << "\n\n";
 		}
 
