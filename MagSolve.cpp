@@ -501,7 +501,7 @@ var_station VarParser(std::stringstream& rd, const std::string& delimiter="\t")
 		vr.var[i].DATE = date[3];
 		vr.var[i].TIME = date[4];
 
-		vr.var[i].var_field = vr.var[i].FIELD / 1000;
+		vr.var[i].var_field = double(vr.var[i].FIELD) / 1000;
 		mean += vr.var[i].var_field;
 
 		std::vector<std::string> tm = leo::split(vr.var[i].TIME, ":");
@@ -619,6 +619,7 @@ survey SurParser(std::stringstream& rd, const std::string& delimiter="\t")
 std::stringstream SurWrite(survey sur, const std::string& del="\t", bool head=true)
 {
 	std::stringstream ss;
+	ss << std::fixed << std::setprecision(4);
 
 	if (head)
 	{
@@ -629,8 +630,6 @@ std::stringstream SurWrite(survey sur, const std::string& del="\t", bool head=tr
 			 << "Y_end" << del
 			 << "TIME" << del
 			 << "DATE";
-
-		ss << std::fixed << std::setprecision(4);
 
 		if (sur.T_grad_init_) ss << del 
 					<< "T_bottom" << del
@@ -1094,6 +1093,7 @@ void T_anom_varInit(configuration& config)
 std::stringstream VarWrite(var_station& st, const std::string& del="\t")
 {
 	std::stringstream ss;
+	ss << std::fixed << std::setprecision(4);
 
 	ss << "FIELD" << del
 		<< "QMC" << del
@@ -1104,7 +1104,7 @@ std::stringstream VarWrite(var_station& st, const std::string& del="\t")
 		<< "time [sec]" << del
 		<< "abs time [sec]" << "\n";
 
-	ss << std::fixed << std::setprecision(4);
+	//ss << std::fixed << std::setprecision(4);
 
 	for (auto& it : st.var)
 	{
@@ -1324,7 +1324,8 @@ int main(int argc, char* argv[])
 				_init_head_ = true;
 
 				if (!Unit_meas) ss << it.file_name << "\n";
-				ss << SurWrite(it, "\t", phead).str();
+				ss << std::fixed << std::setprecision(4)
+					<< SurWrite(it, "\t", phead).str();
 				ss << "\n\n";
 			}
 	
@@ -1333,7 +1334,8 @@ int main(int argc, char* argv[])
 				for (auto& it : config.var_st)
 				{
 					ss << it.file_name << "\n";
-					ss << VarWrite(it).str();
+					ss << std::fixed << std::setprecision(4)
+						<< VarWrite(it).str();
 					ss << "\n\n";
 				}
 			}
@@ -1349,7 +1351,8 @@ int main(int argc, char* argv[])
 
 				std::string file_name = "processing_" + basename(it.file_name);
 				
-				ss << SurWrite(it).str();
+				ss << std::fixed << std::setprecision(4)
+					<< SurWrite(it).str();
 
 				leo::WriteFile(file_name, ss);
 			}
@@ -1363,7 +1366,8 @@ int main(int argc, char* argv[])
 
 					std::string file_name = "processing_" + basename(it.file_name);
 					
-					ss << VarWrite(it).str();
+					ss << std::fixed << std::setprecision(4)
+						<< VarWrite(it).str();
 
 					leo::WriteFile(file_name, ss);
 				}
@@ -1381,7 +1385,8 @@ int main(int argc, char* argv[])
 			_init_head_ = true;
 
 			if (!Unit_meas) ss << it.file_name << "\n";
-			ss << SurWrite(it, "|", phead).str();
+			ss << std::fixed << std::setprecision(4)
+				<< SurWrite(it, "|", phead).str();
 			ss << "\n\n";
 		}
 
@@ -1391,13 +1396,15 @@ int main(int argc, char* argv[])
 			for (auto& it : config.var_st)
 			{
 				ss << it.file_name << "\n";
-				ss << VarWrite(it, "|").str();
+				ss << std::fixed << std::setprecision(4)
+					<< VarWrite(it, "|").str();
 				ss << "\n\n";
 			}
 		}
 
 
-		std::cout << ss.str();
+		std::cout << std::fixed << std::setprecision(4)
+			<< ss.str();
 	}
 
 	std::cout << "Creat by LeoLib. MSU 2026\n";
