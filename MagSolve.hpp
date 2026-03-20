@@ -10,6 +10,8 @@
 #include <thread>
 
 //==================================================================================================================Global_struct================================================================================================================
+namespace magsolve{
+
 struct Var
 {
 	long FIELD;
@@ -123,7 +125,9 @@ class configuration
 		void WriteConfig(bool creat_file, bool to_file, bool print_var, bool Unit_meas,  std::string out_file="processing.txt");
 };
 
+}
 //=================================================================================================================Variation_block===============================================================================================================
+namespace magsolve{
 
 std::array<size_t, 2> Find_Time(var_station& st, double time)
 {
@@ -382,7 +386,10 @@ double dT_var(survey& sur, var_station& st1, size_t k)
 
 	return dT_v;
 }
+
+}
 //=================================================================================================================Normal_field===============================================================================================================
+namespace magsolve{
 
 std::vector<double> T_anom_var(survey& sur, var_station& st1, var_station& st2, var_station& st3, size_t k)
 {
@@ -424,7 +431,10 @@ std::vector<double> T_anom_var(survey& sur, var_station& st1, size_t k)
 	return T_anom;
 }
 
+}
 //=================================================================================================================Leveling_data===============================================================================================================
+namespace magsolve{
+
 void configuration::Leveling()
 {
 	double mean_bot = 0;
@@ -482,8 +492,9 @@ void configuration::Leveling()
 	}
 }
 
+}
 //=================================================================================================================Parsing_File===============================================================================================================
-
+namespace magsolve{
 
 var_station VarParser(std::stringstream& rd, const std::string& delimiter="\t")
 {
@@ -746,8 +757,9 @@ configuration ConfParser(std::stringstream& rd, const std::string& delimiter="\t
 	return config;
 }
 
+}
 //=================================================================================================================Init===============================================================================================================
-
+namespace magsolve{
 
 void configuration::ConfigInit(const std::string& delimiter)
 {
@@ -1020,7 +1032,9 @@ void configuration::T_anom_varInit()
 	}
 }
 
+}
 //=================================================================================================================Write_section===============================================================================================================
+namespace magsolve{
 
 std::string basename(const std::string& path);
 bool not_option(std::string com);
@@ -1401,8 +1415,9 @@ bool not_option(std::string com)
 	return result;
 }
 
-
+}
 //=================================================================================================================Pipline_Dialog===============================================================================================================
+namespace magsolve{
 
 inline int pipline(int argc, char* argv[])
 {
@@ -1457,12 +1472,4 @@ inline int pipline(int argc, char* argv[])
 	return 0;
 }
 
-//=================================================================================================================The_main===============================================================================================================
-int main(int argc, char* argv[]) 
-{
-	if (pipline(argc, argv)) return 1;
-
-	std::cout << "Creat by LeoLib. MSU 2026\n";
-
-	return 0;
 }
