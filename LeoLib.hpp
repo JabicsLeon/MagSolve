@@ -19,6 +19,515 @@
 #include <string>
 #include <thread>
 
+//===============================================================================Vector_modul=========================================================================================
+
+namespace leo
+{
+	template<class T> class vector;// : std::vector<T>;
+
+	template<class T1, class T2>
+	auto operator+(const vector<T1>& a, const vector<T2>& b) -> vector< decltype(std::declval<T1>() + std::declval<T2>()) >;
+
+	template<class T1, class T2>
+	auto operator+=(vector<T1>& a, const vector<T2>& b) -> vector< T1 >;
+
+	template<class T1, class T2>
+	auto operator-(const vector<T1>& a, const vector<T2>& b) -> vector< decltype(std::declval<T1>() - std::declval<T2>()) >;
+
+	template<class T1, class T2>
+	auto operator-=(vector<T1>& a, const vector<T2>& b) -> vector< T1 >;
+
+	template<class T1, class T2>
+	auto operator*(const vector<T1>& a, const vector<T2>& b) -> vector< decltype(std::declval<T1>() * std::declval<T2>()) >;
+
+	template<class T1, class T2>
+	auto operator*=(vector<T1>& a, const vector<T2>& b) -> vector< T1 >&;
+
+	template<class T1, class T2>
+	auto operator/(const vector<T1>& a, const vector<T2>& b) -> vector< decltype(std::declval<T1>() / std::declval<T2>()) >;
+
+	template<class T1, class T2>
+	auto operator/=(vector<T1>& a, const vector<T2>& b) -> vector< T1 >&;
+
+	template<class T1, class T2>
+	bool operator==(const vector<T1>& a, const vector<T2>& b);
+
+
+	template<class T1, class Scalar>
+	auto operator+(const vector<T1>& a, Scalar b) -> vector< decltype(std::declval<T1>() + std::declval<Scalar>()) >;
+
+	template<class T1, class Scalar>
+	auto operator+(Scalar b, const vector<T1>& a) -> vector< decltype(std::declval<Scalar>() + std::declval<T1>()) >;
+
+	template<class T1, class Scalar>
+	auto operator+=(vector<T1>& a, Scalar b) -> vector< T1 >;
+
+	template<class T1, class Scalar>
+	auto operator-(const vector<T1>& a, Scalar b) -> vector< decltype(std::declval<T1>() - std::declval<Scalar>()) >;
+
+	template<class T1, class Scalar>
+	auto operator-(Scalar b, const vector<T1>& a) -> vector< decltype(std::declval<Scalar>() - std::declval<T1>()) >;
+
+	template<class T1, class Scalar>
+	auto operator-=(vector<T1>& a, Scalar b) -> vector< T1 >;
+
+	template<class T1, class Scalar>
+	auto operator*(const vector<T1>& a, Scalar b) -> vector< decltype(std::declval<T1>() * std::declval<Scalar>()) >;
+
+	template<class T1, class Scalar>
+	auto operator*(Scalar b, const vector<T1>& a) -> vector< decltype(std::declval<Scalar>() * std::declval<T1>()) >;
+
+	template<class T1, class Scalar>
+	auto operator*=(vector<T1>& a, Scalar b) -> vector< T1 >&;
+
+	template<class T1, class Scalar>
+	auto operator/(const vector<T1>& a, Scalar b) -> vector< decltype(std::declval<T1>() / std::declval<Scalar>()) >;
+
+	template<class T1, class Scalar>
+	auto operator/=(vector<T1>& a, Scalar b) -> vector< T1 >&;
+
+
+	template<class T>
+	std::ostream& operator<<(std::ostream& os, const vector<T>& v);
+
+	template<class T>
+	vector<T> operator>>(std::istream& is, vector<T>& v);
+
+
+	template<class T>
+	class vector : public std::vector<T>
+	{
+		public:
+			using std::vector<T>::vector;
+
+			T abs();
+
+			T mean();
+
+			T variation();
+
+			T msd();
+
+			T moda();
+
+			T amount();
+
+			T amount_abs();
+
+			template<class U>
+			vector<U> cast_to() const;
+
+			vector projection(vector& vec);
+
+	};
+
+	template<class T, typename... Args>
+	vector<T> vecmult(Args&&... args);
+
+	template<class T, typename... Args>
+	vector<T> plane(Args&&... args);
+
+	template<class T>
+	vector<T> liner_interpolation(vector<T>& vec);
+
+
+	//===================================================Methods_Realisation=================================================
+
+	template<class T>
+	T vector<T>::abs()
+	{
+		if (!(this -> size())) throw std::invalid_argument("leo::vector<T>::abs : vector is empty!");
+
+		T value = 0;
+
+		for (auto& it : *this)
+		{
+			value += it * it;
+		}
+
+		value = std::sqrt(value);
+
+		return value;
+	}
+
+	template<class T>
+	T vector<T>::mean()
+	{
+		if (!(this -> size())) throw std::invalid_argument("leo::vector<T>::mean : vector is empty!");		
+
+		T value = 0;
+
+		for (auto& it : *this)
+		{
+			value += it;
+		}
+
+		value /= this -> size();
+
+		return value;
+	}
+
+	template<class T>
+	T vector<T>::variation()
+	{
+		if (!(this -> size())) throw std::invalid_argument("leo::vector<T>::variation : vector is empty!");
+
+		T value = 0;
+
+		T mean = this -> mean();
+
+		for (auto& it : *this)
+		{
+			T el =  it - mean;
+			value += el * el;
+		}
+		
+		size_t N = this -> size();
+
+		value /= ( (N > 1) ? N - 1 : N);
+
+		return value;
+	}
+
+	template<class T>
+	T vector<T>::msd()
+	{
+		if (!(this -> size())) throw std::invalid_argument("leo::vector<T>::msd : vector is empty!");
+
+		T value = this -> variation();
+
+		value = std::sqrt(value);
+
+		return value;
+	}
+
+	template<class T>
+	T vector<T>::moda()
+	{
+		if (!(this -> size())) throw std::invalid_argument("leo::vector<T>::moda : vector is empty!");
+
+		std::map<T, int> frequency;
+		for (const auto& it : *this)
+		{
+			frequency[it]++;
+		}
+
+		T most_frequent = this -> front();
+		int max_count = 0;
+
+		for (const auto& pair : frequency)
+		{
+			if (pair.second > max_count)
+			{
+				max_count = pair.second;
+				most_frequent = pair.first;
+			}
+		}
+
+		return most_frequent;
+	}
+
+	template<class T>
+	T vector<T>::amount()
+	{
+		if (!(this -> size())) throw std::invalid_argument("leo::vector<T>::amount : vector is empty!");
+
+		T value = 0;
+
+		for (auto& it : *this)
+		{
+			value += it;
+		}
+
+		return value;
+	}
+
+	template<class T>
+	T vector<T>::amount_abs()
+	{
+		if (!(this -> size())) throw std::invalid_argument("leo::vector<T>::amount : vector is empty!");
+
+		T value = 0;
+
+		for (auto& it : *this)
+		{
+			value += std::abs(it);
+		}
+
+		return value;
+	}
+
+
+	template<class T>
+	template<class U>
+	vector<U> vector<T>::cast_to() const
+	{
+		size_t N = this -> size();
+
+		vector<U> vec(N);
+
+		for (size_t i=0; i < N; ++i)
+		{
+			vec[i] = static_cast<U>((*this)[i]);
+		}
+
+		return vec;
+	}
+	
+
+	//===================================================Operators_Realisation=================================================		
+	
+	template<class T1, class T2>
+	auto operator+(const vector<T1>& a, const vector<T2>& b) -> vector< decltype(std::declval<T1>() + std::declval<T2>()) >
+	{
+		size_t N = a.size();
+
+		if (N != b.size()) throw std::invalid_argument("leo::vector::operator+: sizes of vectors not equel");
+
+		using result_type = decltype(std::declval<T1>() + std::declval<T2>());
+
+		vector<result_type> vec(N);
+
+		for (size_t i=0; i < N; ++i)
+		{
+			 vec[i] = a[i] + b[i];
+		}
+
+		return vec;
+	}
+
+        template<class T1, class T2>
+        auto operator+=(vector<T1>& a, const vector<T2>& b)-> vector< T1 >
+	{
+		a = (a + b).template cast_to<T1>();
+
+		return a;
+	}
+
+        template<class T1, class T2>
+        auto operator-(const vector<T1>& a, const vector<T2>& b) -> vector< decltype(std::declval<T1>() - std::declval<T2>()) >
+	{
+		size_t N = a.size();
+
+		if (N != b.size()) throw std::invalid_argument("leo::vector::operator-: sizes of vectors not equel");
+
+		using result_type = decltype(std::declval<T1>() - std::declval<T2>());
+
+		vector<result_type> vec(N);
+
+		for (size_t i=0; i < N; ++i)
+		{
+			vec[i] = a[i] - b[i];
+		}
+
+		return vec;
+	}
+
+        template<class T1, class T2>
+        auto operator-=(vector<T1>& a, const vector<T2>& b) -> vector< T1  >
+	{
+		a = (a - b).template cast_to<T1>();
+
+		return a;
+	}
+
+        template<class T1, class T2>
+        auto operator*(const vector<T1>& a, const vector<T2>& b) -> vector< decltype(std::declval<T1>() * std::declval<T2>()) >
+	{
+		size_t N = a.size();
+
+		if (N != b.size()) throw std::invalid_argument("leo::vector::operator*: sizes of vectors not equel");
+
+		using result_type = decltype(std::declval<T1>() * std::declval<T2>());
+
+		vector<result_type> vec(N);
+
+		for (size_t i=0; i < N; ++i)
+		{
+			vec[i] = a[i] * b[i];
+		}
+
+		return vec;
+	}
+
+        template<class T1, class T2>
+	auto operator*=(vector<T1>& a, const vector<T2>& b) -> vector< T1 >&
+	{
+		a = (a * b).template cast_to<T1>();
+
+		return a;
+	}
+
+        template<class T1, class T2>
+        auto operator/(const vector<T1>& a, const vector<T2>& b) -> vector< decltype(std::declval<T1>() / std::declval<T2>()) >
+	{
+		size_t N = a.size();
+
+		if (N != b.size()) throw std::invalid_argument("leo::vector::operator/: sizes of vectors not equel");
+
+		using result_type = decltype(std::declval<T1>() / std::declval<T2>());
+
+		vector<result_type> vec(N);
+
+		for (size_t i=0; i < N; ++i)
+		{
+			if (b[i] == 0) throw std::domain_error("leo::vector::operator/ : devision by zero");
+
+			vec[i] = a[i] / b[i];
+		}
+
+		return vec;
+	}
+
+        template<class T1, class T2>
+        auto operator/=(vector<T1>& a, const vector<T2>& b) -> vector< T1 >&
+	{
+		a = (a / b).template cast_to<T1>();
+
+		return a;
+	}
+
+	template<class T1, class T2>
+	bool operator==(const vector<T1>& a, const vector<T2>& b)
+	{
+		size_t N = a.size();
+
+		if (N != b.size()) return false;
+
+		for (size_t i=0; i < N; ++i)
+		{
+			if (a[i] != b[i]) return false;
+		}
+
+		return true;
+	}
+
+
+	template<class T1, class Scalar>
+	auto operator+(const vector<T1>& a, Scalar b) -> vector< decltype(std::declval<T1>() + std::declval<Scalar>()) >&
+	{
+		size_t N = a.size();
+
+		using result_type = decltype(std::declval<T1>() + std::declval<Scalar>());
+
+		vector<result_type> vec(N);
+
+		for (size_t i=0; i < N; ++i)
+		{
+			vec[i] = a[i] + b;
+		}
+
+		return vec;
+	}
+
+	template<class T1, class Scalar>
+	auto operator+(Scalar b, const vector<T1>& a) -> vector< decltype(std::declval<Scalar>() + std::declval<T1>()) >
+	{
+		return a + b;
+	}
+
+	template<class T1, class Scalar>
+	auto operator+=(vector<T1>& a, Scalar b) -> vector< T1  >&
+	{
+		a = (a + b).template cast_to<T1>();
+
+		return a;
+	}
+
+	template<class T1, class Scalar>
+	auto operator-(const vector<T1>& a, Scalar b) -> vector< decltype(std::declval<T1>() - std::declval<Scalar>()) >
+	{
+		size_t N = a.size();
+
+		using result_type = decltype(std::declval<T1>() - std::declval<Scalar>());
+
+		vector<result_type> vec(N);
+
+		for (size_t i=0; i < N; ++i)
+		{
+			vec[i] = a[i] - b;
+		}
+
+		return vec;
+	}
+
+	template<class T1, class Scalar>
+	auto operator-=(vector<T1>& a, Scalar b) -> vector< T1 >&
+	{
+		a = (a - b).template cast_to<T1>();
+
+		return a;
+	}
+
+	template<class T1, class Scalar>
+	auto operator*(const vector<T1>& a, Scalar b) -> vector< decltype(std::declval<T1>() * std::declval<Scalar>()) >
+	{
+		size_t N = a.size();
+
+		using result_type = decltype(std::declval<T1>() *  std::declval<Scalar>());
+
+		vector<result_type> vec(N);
+
+		for (size_t i=0; i < N; ++i)
+		{
+			vec[i] = a[i] * b;
+		}
+
+		return vec;
+	}
+
+	template<class T1, class Scalar>
+	auto operator*(Scalar b, const vector<T1>& a) -> vector< decltype(std::declval<Scalar>() * std::declval<T1>()) >
+	{
+		return a * b;
+	}
+
+	template<class T1, class Scalar>
+	auto operator*=(vector<T1>& a, Scalar b) -> vector< T1 >&
+	{
+		a = (a * b).template cast_to<T1>();
+
+		return a;
+	}
+
+	template<class T1, class Scalar>
+	auto operator/(const vector<T1>& a, Scalar b) -> vector< decltype(std::declval<T1>() / std::declval<Scalar>()) >
+	{
+		if (b == 0) throw std::domain_error("leo::vector::operator/ : devision by zero");
+
+		size_t N = a.size();
+
+		using result_type = decltype(std::declval<T1>() / std::declval<Scalar>());
+
+		vector<result_type> vec(N);
+
+		for (size_t i=0; i < N; ++i)
+		{
+			vec[i] = a[i] / b;
+		}
+
+		return vec;
+	}
+
+	template<class T1, class Scalar>
+	auto operator/=(vector<T1>& a, Scalar b) -> vector< T1 >&
+	{
+		a = (a / b).template cast_to<T1>();
+
+		return a;
+	}
+
+	template<class T>
+	std::ostream& operator<<(std::ostream& os, const vector<T>& v)
+	{
+		for (auto& it : v)
+		{
+			os << it << "\t";
+		}
+
+		return os;
+	}
+}
 
 //===============================================================================Matrix_modul=========================================================================================
 
@@ -1962,6 +2471,7 @@ auto Hessian(Iterator1 Func_begin, Iterator1 Func_end, Iterator2 value1_begin, I
 }
 
 
+
 template<size_t Index1, size_t Index2, typename Tag, typename T, typename Iterator1, typename Iterator2, typename Func, typename... Args>
 auto Method_Newton(Tag tag, T error/*=1.0*/, size_t max_iter/*=100*/, Iterator1 data_b, Iterator1 data_e, Func& func, Args&&... args)
 {
@@ -2061,7 +2571,6 @@ auto Method_Newton(Tag tag, T error/*=1.0*/, size_t max_iter/*=100*/, Iterator1 
 }
 
 //===============================================================================Test_modul=========================================================================================
-
 
 
 

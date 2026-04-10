@@ -439,16 +439,21 @@ void configuration::Leveling()
 {
 	double mean_bot = 0;
 	double mean_top = 0;
+	int N_all = 0;
 
 	for(auto& it : this -> sur)
 	{
-		mean_bot += it.mean_bot;
-		if (it.T_grad_init_) mean_top += it.mean_top;
+		int N = it.meas.size();
+		mean_bot += N * it.mean_bot;
+		if (it.T_grad_init_) mean_top += N * it.mean_top;
+		N_all += N;
 	}
 
-	double N = this -> sur.size();
-	mean_bot /= N;
-	mean_top /= N;
+	//double N = this -> sur.size();
+	mean_bot /= N_all;
+	mean_top /= N_all;
+
+	
 
 	std::vector<std::thread> proc;
 
@@ -464,21 +469,30 @@ void configuration::Leveling()
 				 dmean_top = mean_top - it.mean_top;
 			}
 
-			if (it.T_anom_init_)
+			if (it.T_anom_init_ || it.dT_var_init_)
 			{
 				if (it.T_grad_init_)
 				{
 					for(auto& el : it.meas)
 					{
-						el.T_bot_anom += dmean_bot;
-						el.T_top_anom += dmean_top;
+						if (it.T_anom_init_)
+						{
+							el.T_bot_anom += dmean_bot;
+							el.T_top_anom += dmean_top;
+						}
+						if (it.dT_var_init_)
+						{
+							el.dT_bot += dmean_bot;
+							el.dT_top += dmean_bot;
+						}
 					}
 				}
 				else
 				{
 					for(auto& el : it.meas)
 					{
-						el.T_bot_anom += dmean_bot;
+						if (it.T_anom_init_) el.T_bot_anom += dmean_bot;
+						if (it.dT_var_init_) el.dT_bot += dmean_bot;
 					}
 				}
 			}
