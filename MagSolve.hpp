@@ -5,6 +5,7 @@
 #include <future>
 #include <iostream>
 #include <iomanip>
+#include <map>
 #include <sstream>
 #include <vector>
 #include <thread>
@@ -14,29 +15,29 @@ namespace magsolve{
 
 struct Var
 {
-	long FIELD;
-	double var_field;
-	double time;
-	//long double time_abs;
+	long FIELD = 0;
+	double var_field = 0;
+	double time = 0;
+	//long double time_abs = 0;
 	std::array<int, 3> date;
 
-	int QMC;
-	int ST;
+	int QMC = 0;
+	int ST = 0;
 
-	std::string DATE;
-	std::string TIME;		
+	std::string DATE = "";
+	std::string TIME = "";		
 };
 
 struct var_station 
 {
-	std::string file_name;
+	std::string file_name = "";
 
 	std::vector<Var> var;
-	double X;
-	double Y;
+	double X = 0;
+	double Y = 0;
 
-	double Time_start;
-	double Time_stop;
+	double Time_start = 0;
+	double Time_stop = 0;
 
 	/*long double Time_start_abs;
 	long double Time_stop_abs;*/
@@ -54,46 +55,48 @@ struct var_station
 
 struct Meas
 {
-	double pk;
-	double X;
-	double Y;
+	double pk = 0;
+	double X = 0;
+	double Y = 0;
 
-	double T_top;
-	double T_bot;
-	double T_grad;
-	double T_bot_anom;
-	double T_top_anom;
+	double T_top = 0;
+	double T_bot = 0;
+	double T_grad = 0;
+	double T_bot_anom = 0;
+	double T_top_anom = 0;
 
+	double accuracy = 0;
 
-	double dT_var;
-	double dT_norm;
+	double dT_var = 0;
+	double dT_norm = 0;
 
-	double dT_top;
-	double dT_bot;
+	double dT_top = 0;
+	double dT_bot = 0;
 
-	double time;
-	//long double time_abs;
+	double time = 0;
+	//long double time_abs = 0;
 
-	int Line;
-	int pr;
+	int Line = 0;
+	int pr = 0;
 
-	std::string DATE;
-	std::string TIME;
+	std::string DATE = "";
+	std::string TIME = "";
 
 	std::array<int, 3> date;
 };
 
 struct survey 
 {
-	std::string file_name;
+	std::string file_name = "";
 
 	std::vector<Meas> meas;
 
-	double Time_start;
-	double Time_stop;
+	double Time_start = 0;
+	double Time_stop = 0;
 	
 	double mean_bot = 0;
 	double mean_top = 0;
+	double to_level = 0;
 
 	/*long double Time_start_abs;
 	long double Time_stop_abs;*/
@@ -104,13 +107,28 @@ struct survey
 	bool T_grad_init_ = false;
 	bool T_anom_init_ = false;
 	bool dT_var_init_ = false;
+	bool to_level_init_ = false;
 };
+
+/*
+struct profils_line
+{
+	int pr = 0;
+	std::vector<std::array<2, int>> pk_number;
+};
+*/
 
 class configuration
 {
 	public:
+		class iterator_prline;
+		class iterator_prpkline;
+		class iterator_pkprline;
+
 		std::vector<survey> sur;
 		std::vector<var_station> var_st;
+
+		//std::vector<profils_line> pr_pk;
 
 		bool date_init_ = false;
 
@@ -126,6 +144,52 @@ class configuration
 };
 
 }
+//=================================================================================================================Iterators_to_configuration===============================================================================================================
+namespace magsolve
+{
+	/*
+	class configuration::iterator_prline
+	{
+		private:
+			configuration* config;
+			size_t index;
+
+			size_t calculate_index(int pr_pos)
+			{
+				if (pr_pos >= 0 && pr_pos < config -> size())
+				{
+					if (config -> pr_pk[pr_pos].pr == pr_pos) return pr_pos;
+					else
+					{
+						int sh_index = pr_pos;
+						if (config -> pr_pk[pr_pos].pr > pr_pos)
+						{
+							while (config -> pr_pk[pr_pos].pr != pr_pos && sh_index >= 0)
+							{
+								sh_index--;
+							}
+						}
+						else
+						{
+							while (config -> pr_pk[pr_pos].pr != pr_pos && sh_index < config -> size())
+							{
+								sh_index++;
+							}
+						}
+						if (config -> pr_pk[pr_pos].pr == pr_pos) return sh_index;
+					}
+					
+					throw std::out_of_range("Error in iterator_prline: pr - profile has't found in pr_pk!");
+				}
+				else
+				{
+					
+				}
+			}
+	}
+*/
+
+};
 //=================================================================================================================Variation_block===============================================================================================================
 namespace magsolve{
 
@@ -251,6 +315,12 @@ double dT_var(survey& sur, var_station& st1, var_station& st2, var_station& st3,
 
 	mean /= 3;
 
+	if (!sur.to_level_init_) 
+	{
+		sur.to_level = mean;
+		sur.to_level_init_ = true;
+	}
+
 	double dT_v = (-1) * ( cof[0] * sur.meas[k].X + cof[1] * sur.meas[k].Y + cof[3] ) / cof[2] - mean;
 
 	return dT_v;
@@ -345,6 +415,12 @@ double dT_var(survey& sur, var_station& st1, var_station& st2, size_t k)
 
 	mean /= 2;
 
+	if (!sur.to_level_init_) 
+	{
+		sur.to_level = mean;
+		sur.to_level_init_ = true;
+	}
+
 	double dT_v = T1 + ( K(S_t) ).get_value() / ( S(S_t) ).get_value() - mean;
 
 	return dT_v;
@@ -381,6 +457,12 @@ double dT_var(survey& sur, var_station& st1, size_t k)
 	std::array<size_t, 2> t = Find_Time(st1, time);
 
 	double T1 = linear_interpolation(time, st1.var[t[0]].time, st1.var[t[0]].var_field, st1.var[t[1]].time, st1.var[t[1]].var_field);
+
+	if (!sur.to_level_init_)
+	{
+		sur.to_level = st1.mean;
+		sur.to_level_init_ = true;
+	}
 
 	double dT_v = T1 - st1.mean;
 
@@ -435,7 +517,8 @@ std::vector<double> T_anom_var(survey& sur, var_station& st1, size_t k)
 //=================================================================================================================Leveling_data===============================================================================================================
 namespace magsolve{
 
-void configuration::Leveling()
+/*
+void configuration::Leveling_old()
 {
 	double mean_bot = 0;
 	double mean_top = 0;
@@ -504,6 +587,61 @@ void configuration::Leveling()
 	{
 		t.join();
 	}
+}
+*/
+
+void configuration::Leveling()
+{
+	double mean_all = 0;
+
+	for (auto& it : this -> sur) mean_all += it.to_level;
+
+	mean_all /= this -> sur.size();
+
+	std::vector<std::thread> proc;
+
+	for (auto& it : this -> sur)
+	{
+		proc.push_back( std::thread( [&it, mean_all]
+		{
+			double dlevel = mean_all - it.to_level;
+
+			if (it.T_anom_init_ || it.dT_var_init_)
+			{
+				if (it.T_grad_init_)
+				{
+					for (auto& el : it.meas)
+					{
+						if (it.T_anom_init_)
+						{
+							el.T_bot_anom += dlevel;
+							el.T_top_anom += dlevel;
+						}
+						if (it.dT_var_init_)
+						{
+							el.dT_bot += dlevel;
+							el.dT_top += dlevel;
+						}
+					}
+				}
+				else
+				{
+					for (auto& el : it.meas)
+					{
+						if (it.T_anom_init_) el.T_bot_anom += dlevel;
+						if (it.dT_var_init_) el.dT_bot += dlevel;
+					}
+				}
+			}
+		}
+		));
+	}
+
+	for (auto& t : proc)
+	{
+		t.join();
+	}
+
 }
 
 }
